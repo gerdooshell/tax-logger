@@ -7,8 +7,11 @@ import (
 )
 
 type Queue[T any] interface {
-	Add(element T) error
+	// Insert adds an item to the queue or returns an error if queue is full.
+	Insert(element T) error
+	// Read reads one item from queue. call IsDone(success) callback if you want to dispose/keep the read value. Read is thread safe.
 	Read() <-chan Output[T]
+	// ReadAll keeps reading from queue forever. This method should be called only once. call IsDone(success) callback if you want to dispose/keep the read value.
 	ReadAll() <-chan Output[T]
 }
 
@@ -38,7 +41,8 @@ type Output[T any] struct {
 	IsDone func(success bool)
 }
 
-func (q *queue[T]) Add(element T) error {
+// Insert adds an item to the queue or returns an error if queue is full.
+func (q *queue[T]) Insert(element T) error {
 	if q.length >= q.maxLength {
 		return errors.New("queue reached its max length")
 	}
@@ -47,6 +51,7 @@ func (q *queue[T]) Add(element T) error {
 	return nil
 }
 
+// Read reads one item from queue. call IsDone(success) callback if you want to dispose/keep the read value. Read is thread safe.
 func (q *queue[T]) Read() <-chan Output[T] {
 	out := make(chan Output[T])
 	go func() {
@@ -92,7 +97,9 @@ func (q *queue[T]) Read() <-chan Output[T] {
 	return out
 }
 
+// ReadAll keeps reading from queue forever. This method should be called only once. call IsDone(success) callback if you want to dispose/keep the read value.
 func (q *queue[T]) ReadAll() <-chan Output[T] {
+	// TODO: add stop callback for graceful stop of a docker container
 	out := make(chan Output[T])
 	retryTimeKeepAlive := time.Minute
 	go func() {
