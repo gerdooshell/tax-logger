@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-type Queue[T any] interface {
-	// Insert adds an item to the queue or returns an error if queue is full.
+type Queue[T comparable] interface {
+	// Insert adds an item to the queue or returns an error if queue is full or the element is nil.
 	Insert(element T) error
 	// Read reads one item from queue. call IsDone(success) callback if you want to dispose/keep the read value. Read is thread safe.
 	Read() <-chan Output[T]
@@ -15,7 +15,7 @@ type Queue[T any] interface {
 	ReadAll() <-chan Output[T]
 }
 
-func NewQueue[T any](bufferSize int, isSticky bool) Queue[T] {
+func NewQueue[T comparable](bufferSize int, isSticky bool) Queue[T] {
 	return &queue[T]{
 		channel:     make(chan T, bufferSize),
 		maxLength:   bufferSize,
@@ -24,7 +24,7 @@ func NewQueue[T any](bufferSize int, isSticky bool) Queue[T] {
 	}
 }
 
-type queue[T any] struct {
+type queue[T comparable] struct {
 	channel     chan T
 	mu          sync.Mutex
 	firstItem   *T
@@ -41,10 +41,13 @@ type Output[T any] struct {
 	IsDone func(success bool)
 }
 
-// Insert adds an item to the queue or returns an error if queue is full.
+// Insert adds an item to the queue or returns an error if queue is full or the element is nil.
 func (q *queue[T]) Insert(element T) error {
 	if q.length >= q.maxLength {
 		return errors.New("queue reached its max length")
+	}
+	if element == *new(T) {
+		return errors.New("nil item is passed to queue")
 	}
 	q.channel <- element
 	q.length++
@@ -65,6 +68,7 @@ func (q *queue[T]) Read() <-chan Output[T] {
 			select {
 			case value = <-q.channel:
 				q.firstItem = &value
+				q.length--
 			default:
 				err = errors.New("empty queue")
 			}
@@ -102,6 +106,7 @@ func (q *queue[T]) ReadAll() <-chan Output[T] {
 	// TODO: add stop callback for graceful stop of a docker container
 	out := make(chan Output[T])
 	retryTimeKeepAlive := time.Minute
+
 	go func() {
 		defer close(out)
 		for {
@@ -113,6 +118,7 @@ func (q *queue[T]) ReadAll() <-chan Output[T] {
 				select {
 				case value = <-q.channel:
 					q.firstItem = &value
+					q.length--
 				case <-time.After(retryTimeKeepAlive):
 					continue
 				}
