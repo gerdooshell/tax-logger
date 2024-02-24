@@ -104,7 +104,7 @@ func (pg *postgresServiceImpl) SaveServiceLogs(logs []entities.ServiceLog) <-cha
 		transaction := pg.engine.Conn.Begin(options)
 		defer transaction.Commit()
 		var err error
-		chunkSize := 2000
+		chunkSize := 3000
 		for i := 0; i < len(schemas); i += chunkSize {
 			end := i + chunkSize
 			if end >= len(schemas) {
