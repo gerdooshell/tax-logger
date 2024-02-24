@@ -10,17 +10,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func main() {
+func LogError(severity, message string) (bool, error) {
 	environment.SetEnvironment(environment.Dev)
 	loggerCli := newLoggerClient()
-	loggerCli.logError(context.Background())
-
-}
-
-func LogError() {
-	environment.SetEnvironment(environment.Dev)
-	loggerCli := newLoggerClient()
-	loggerCli.logError(context.Background())
+	return loggerCli.logError(context.Background(), severity, message)
 }
 
 func getLoggingServerUrl() string {
@@ -62,13 +55,14 @@ func (lc *loggerClient) generateDataServiceClient() error {
 	return err
 }
 
-func (lc *loggerClient) logError(ctx context.Context) {
-	lc.generateDataServiceClient()
+func (lc *loggerClient) logError(ctx context.Context, severity, message string) (bool, error) {
+	if err := lc.generateDataServiceClient(); err != nil {
+		return false, err
+	}
 	input := &logger.SaveServiceLogRequest{
-		Severity: "error",
-		Message:  "log message",
+		Severity: severity,
+		Message:  message,
 	}
 	out, err := lc.grpcClient.SaveServiceLog(ctx, input)
-	fmt.Println(err)
-	fmt.Println(out.Success)
+	return out.Success, err
 }
