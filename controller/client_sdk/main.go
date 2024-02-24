@@ -11,7 +11,9 @@ import (
 )
 
 func LogError(severity, message string) (bool, error) {
-	environment.SetEnvironment(environment.Dev)
+	if err := environment.SetEnvironment(environment.Dev); err != nil {
+		return false, err
+	}
 	loggerCli := newLoggerClient()
 	return loggerCli.logError(context.Background(), severity, message)
 }
