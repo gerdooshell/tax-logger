@@ -17,6 +17,12 @@ func main() {
 
 }
 
+func LogError() {
+	environment.SetEnvironment(environment.Dev)
+	loggerCli := newLoggerClient()
+	loggerCli.logError(context.Background())
+}
+
 func getLoggingServerUrl() string {
 	if environment.GetEnvironment() == environment.Dev {
 		return "localhost:47395"
