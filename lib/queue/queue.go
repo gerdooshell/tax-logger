@@ -10,7 +10,7 @@ type Queue[T comparable] interface {
 	// Insert adds an item to the queue or returns an error if queue is full or the element is nil.
 	Insert(element T) error
 	// Read reads one item from queue. call IsDone(success) callback if you want to dispose/keep the read value. Read is thread safe.
-	Read() <-chan Output[T]
+	Read() Output[T]
 	// ReadAll keeps reading from queue forever. This method should be called only once. call IsDone(success) callback if you want to dispose/keep the read value.
 	ReadAll() <-chan Output[T]
 }
@@ -55,38 +55,35 @@ func (q *queue[T]) Insert(element T) error {
 }
 
 // Read reads one item from queue. call IsDone(success) callback if you want to dispose/keep the read value. Read is thread safe.
-func (q *queue[T]) Read() <-chan Output[T] {
-	out := make(chan Output[T])
-	go func() {
-		defer close(out)
-		q.mu.Lock()
-		var value T
-		var err error
-		if q.firstItem != nil {
-			value = *q.firstItem
-		} else {
-			select {
-			case value = <-q.channel:
-				q.firstItem = &value
-				q.length--
-			default:
-				err = errors.New("empty queue")
-			}
+func (q *queue[T]) Read() Output[T] {
+	q.mu.Lock()
+	var value T
+	var err error
+	if q.firstItem != nil {
+		value = *q.firstItem
+	} else {
+		select {
+		case value = <-q.channel:
+			q.firstItem = &value
+			q.length--
+		default:
+			err = errors.New("empty queue")
 		}
-		isTimedOut := false
-		isDoneCalled := make(chan struct{})
-		qOut := Output[T]{Value: value, Err: err, IsDone: func(success bool) {
-			defer close(isDoneCalled)
-			if isTimedOut {
-				return
-			}
-			if success {
-				q.firstItem = nil
-			}
-			isDoneCalled <- struct{}{}
-			q.mu.Unlock()
-		}}
-		out <- qOut
+	}
+	isTimedOut := false
+	isDoneCalled := make(chan struct{}, 1)
+	qOut := Output[T]{Value: value, Err: err, IsDone: func(success bool) {
+		defer close(isDoneCalled)
+		if isTimedOut {
+			return
+		}
+		if success {
+			q.firstItem = nil
+		}
+		isDoneCalled <- struct{}{}
+		q.mu.Unlock()
+	}}
+	go func() {
 		select {
 		case <-isDoneCalled:
 		case <-time.After(q.readTimeout):
@@ -98,13 +95,13 @@ func (q *queue[T]) Read() <-chan Output[T] {
 			q.mu.Unlock()
 		}
 	}()
-	return out
+	return qOut
 }
 
 // ReadAll keeps reading from queue forever. This method should be called only once. call IsDone(success) callback if you want to dispose/keep the read value.
 func (q *queue[T]) ReadAll() <-chan Output[T] {
 	// TODO: add stop callback for graceful stop of a docker container
-	out := make(chan Output[T])
+	out := make(chan Output[T], 1)
 	retryTimeKeepAlive := time.Minute
 
 	go func() {
