@@ -1,11 +1,10 @@
 package serviceLogger
 
 import (
-	"fmt"
 	postgresService "github.com/gerdooshell/tax-logger/data-access/postgres_service"
 	"github.com/gerdooshell/tax-logger/entities"
 	"github.com/gerdooshell/tax-logger/interactors"
-	"github.com/gerdooshell/tax-logger/lib/queue"
+	queueBulk "github.com/gerdooshell/tax-logger/interactors/queue_bulk"
 	"sync"
 	"time"
 )
@@ -20,9 +19,8 @@ func GetServiceLoggerInstance() ServiceLogger {
 	if serviceLoggerInstance != nil {
 		return serviceLoggerInstance
 	}
-	bufferSize := 10000
 	serviceLoggerInstance = &serviceLoggerImpl{
-		logQueue:                 queue.NewQueue[entities.ServiceLog](bufferSize, true),
+		logQueue:                 queueBulk.NewQueueBulk[entities.ServiceLog](3000, 100000, time.Second*5),
 		dataService:              postgresService.NewPostgresService(),
 		bulkInsertCountThreshold: 100,
 		bulkInsertTimeThreshold:  time.Second * 10,
@@ -32,7 +30,7 @@ func GetServiceLoggerInstance() ServiceLogger {
 }
 
 type serviceLoggerImpl struct {
-	logQueue                 queue.Queue[entities.ServiceLog]
+	logQueue                 queueBulk.QueueBulk[entities.ServiceLog]
 	dataService              interactors.DataAccess
 	countQueued              int
 	bulkInsertCountThreshold int
@@ -81,10 +79,9 @@ func (s *serviceLoggerImpl) Log(serviceLog entities.ServiceLog) (err error) {
 }
 
 func (s *serviceLoggerImpl) persist() {
-	outChan := s.logQueue.ReadAll()
-	for out := range outChan {
-		fmt.Println(out.Value)
-		if err := <-s.dataService.SaveServiceLogs([]entities.ServiceLog{out.Value}); err != nil {
+	readChan := s.logQueue.ReadAll()
+	for out := range readChan {
+		if err := <-s.dataService.SaveServiceLogs(out.Value); err != nil {
 			out.IsDone(false)
 		}
 		out.IsDone(true)
