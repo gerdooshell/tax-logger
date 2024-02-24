@@ -14,6 +14,7 @@ func main() {
 	environment.SetEnvironment(environment.Dev)
 	loggerCli := newLoggerClient()
 	loggerCli.logError(context.Background())
+
 }
 
 func getLoggingServerUrl() string {
