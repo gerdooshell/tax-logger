@@ -64,5 +64,9 @@ func (lc *loggerClient) logError(ctx context.Context, severity, message string) 
 		Message:  message,
 	}
 	out, err := lc.grpcClient.SaveServiceLog(ctx, input)
-	return out.Success, err
+	success := false
+	if out != nil {
+		success = out.Success
+	}
+	return success, err
 }
