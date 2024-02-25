@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/gerdooshell/tax-logger/controller/protobuf/src/logger"
+	"github.com/gerdooshell/tax-communication/src/logger"
 	"google.golang.org/grpc"
 	"net"
 )

@@ -2,11 +2,15 @@ package server
 
 import (
 	"context"
-	"github.com/gerdooshell/tax-logger/controller/protobuf/src/logger"
+	"fmt"
+	"time"
+
+	"github.com/gerdooshell/tax-communication/src/logger"
 	"github.com/gerdooshell/tax-logger/entities"
+	serviceName "github.com/gerdooshell/tax-logger/entities/constants/service-name"
 	"github.com/gerdooshell/tax-logger/entities/severity"
 	serviceLogger "github.com/gerdooshell/tax-logger/interactors/service-logger"
-	"time"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type LoggerServerHandler interface {
@@ -20,17 +24,29 @@ func NewLoggerServerHandler() LoggerServerHandler {
 type loggerServerHandler struct {
 }
 
-func (l *loggerServerHandler) SaveServiceLog(ctx context.Context, request *logger.SaveServiceLogRequest) (*logger.SaveServiceLogResponse, error) {
+func (l *loggerServerHandler) SaveServiceLog(ctx context.Context, request *logger.SaveServiceLogReq) (empty *emptypb.Empty, err error) {
+	//apiKey := request.GetAPIKey()  TODO: validate api key
 	loggerService := serviceLogger.GetServiceLoggerInstance()
 	severityValue, err := severity.FromString(request.GetSeverity())
 	if err != nil {
-		return nil, err
+		return
 	}
+	origin := request.GetOriginLog()
+	srvName, err := serviceName.FromString(origin.GetServiceName())
+	if err != nil {
+		return
+	}
+	fmt.Println(request.GetTimestamp())
 	serviceLog := entities.ServiceLog{
 		Timestamp: time.Now(),
 		Severity:  severityValue,
-		Message:   request.Message,
+		Message:   request.GetMessage(),
+		Origin: entities.OriginLog{
+			ProcessId:   origin.GetProcessId(),
+			ServiceName: srvName,
+			StackTrace:  origin.GetStackTrace(),
+		},
 	}
 	err = loggerService.Log(serviceLog)
-	return &logger.SaveServiceLogResponse{Success: err == nil}, err
+	return
 }

@@ -8,6 +8,7 @@ const (
 	NotFound     ServiceName = "not-found"
 	TaxCore      ServiceName = "tax-core"
 	DataProvider ServiceName = "data-provider"
+	Mock         ServiceName = "mock"
 )
 
 func (s ServiceName) ToString() string {
@@ -22,6 +23,8 @@ func FromString(serviceNameStr string) (ServiceName, error) {
 		serviceName = TaxCore
 	case DataProvider.ToString():
 		serviceName = DataProvider
+	case Mock.ToString():
+		serviceName = Mock
 	default:
 		serviceName = NotFound
 		err = fmt.Errorf("invalid service name: \"%s\"", serviceNameStr)
