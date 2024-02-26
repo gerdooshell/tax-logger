@@ -19,23 +19,18 @@ func GetServiceLoggerInstance() ServiceLogger {
 	if serviceLoggerInstance != nil {
 		return serviceLoggerInstance
 	}
+	const QueuePurgeTimeout = time.Second * 5
 	serviceLoggerInstance = &serviceLoggerImpl{
-		logQueue:                 queueBulk.NewQueueBulk[entities.ServiceLog](3000, 100000, time.Second*5),
-		dataService:              postgresService.NewPostgresService(),
-		bulkInsertCountThreshold: 100,
-		bulkInsertTimeThreshold:  time.Second * 10,
+		logQueue:    queueBulk.NewQueueBulk[entities.ServiceLog](3000, 10000, QueuePurgeTimeout),
+		dataService: postgresService.NewPostgresService(),
 	}
 	go serviceLoggerInstance.persist()
 	return serviceLoggerInstance
 }
 
 type serviceLoggerImpl struct {
-	logQueue                 queueBulk.QueueBulk[entities.ServiceLog]
-	dataService              interactors.DataAccess
-	countQueued              int
-	bulkInsertCountThreshold int
-	bulkInsertTimeThreshold  time.Duration
-	firstElementInsertTime   time.Time
+	logQueue    queueBulk.QueueBulk[entities.ServiceLog]
+	dataService interactors.DataAccess
 }
 
 var muLogBulk sync.Mutex
@@ -52,10 +47,6 @@ func (s *serviceLoggerImpl) LogBulk(serviceLogs []entities.ServiceLog) (err erro
 		if err = s.logQueue.Insert(log); err != nil {
 			return
 		}
-		if s.countQueued == 0 {
-			s.firstElementInsertTime = time.Now()
-		}
-		s.countQueued++
 	}
 	return
 }
@@ -71,19 +62,13 @@ func (s *serviceLoggerImpl) Log(serviceLog entities.ServiceLog) (err error) {
 	if err = s.logQueue.Insert(serviceLog); err != nil {
 		return
 	}
-	if s.countQueued == 0 {
-		s.firstElementInsertTime = time.Now()
-	}
-	s.countQueued++
 	return
 }
 
 func (s *serviceLoggerImpl) persist() {
 	readChan := s.logQueue.ReadAll()
 	for out := range readChan {
-		if err := <-s.dataService.SaveServiceLogs(out.Value); err != nil {
-			out.IsDone(false)
-		}
-		out.IsDone(true)
+		err := <-s.dataService.SaveServiceLogs(out.Value)
+		out.IsDone(err == nil)
 	}
 }

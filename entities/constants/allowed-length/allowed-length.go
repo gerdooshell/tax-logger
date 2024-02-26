@@ -1,9 +1,9 @@
 package allowedLength
 
 const (
-	MaxLogMessageLength   = 100
+	MaxLogMessageLength   = 1000
 	MinLogMessageLength   = 1
-	MaxStackTraceLength   = 300
+	MaxStackTraceLength   = 2000
 	MinStackTraceLength   = 0
 	MaxFunctionNameLength = 100
 	MinFunctionNameLength = 0

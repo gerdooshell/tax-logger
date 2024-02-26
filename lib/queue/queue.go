@@ -121,12 +121,12 @@ func (q *queue[T]) ReadAll() <-chan Output[T] {
 				}
 			}
 			isTimedOut := false
-			isDoneCalled := make(chan struct{})
+			isDoneCalled := make(chan struct{}, 1)
 			qOut := Output[T]{Value: value, Err: err, IsDone: func(success bool) {
-				defer close(isDoneCalled)
 				if isTimedOut {
 					return
 				}
+				defer close(isDoneCalled)
 				if success {
 					q.firstItem = nil
 				}
