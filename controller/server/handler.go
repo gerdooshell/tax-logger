@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gerdooshell/tax-communication/src/logger"
@@ -40,7 +39,6 @@ func (l *loggerServerHandler) SaveServiceLog(ctx context.Context, request *logge
 	if err != nil {
 		return
 	}
-	fmt.Println(request.GetTimestamp())
 	serviceLog := entities.ServiceLog{
 		Timestamp: time.Now(),
 		Severity:  severityValue,
