@@ -24,6 +24,10 @@ func NewLoggerServerHandler() LoggerServerHandler {
 type loggerServerHandler struct {
 }
 
+func (l *loggerServerHandler) Ping(ctx context.Context, empty *emptypb.Empty) (*emptypb.Empty, error) {
+	return empty, nil
+}
+
 func (l *loggerServerHandler) SaveServiceLog(ctx context.Context, request *logger.SaveServiceLogReq) (empty *emptypb.Empty, err error) {
 	//apiKey := request.GetAPIKey()  TODO: validate api key
 	loggerService := serviceLogger.GetServiceLoggerInstance()
