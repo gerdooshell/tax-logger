@@ -22,6 +22,7 @@ func (sl *ServiceLogModel) TableName() string {
 func NewServiceLogModelFromEntity(entity entities.ServiceLog) ServiceLogModel {
 	return ServiceLogModel{
 		Severity:    entity.Severity.ToString(),
+		Timestamp:   entity.Timestamp,
 		Message:     entity.Message,
 		ServiceName: entity.Origin.ServiceName.ToString(),
 		StackTrace:  entity.Origin.StackTrace,
