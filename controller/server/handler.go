@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gerdooshell/tax-communication/src/logger"
@@ -24,6 +23,10 @@ func NewLoggerServerHandler() LoggerServerHandler {
 type loggerServerHandler struct {
 }
 
+func (l *loggerServerHandler) Ping(ctx context.Context, empty *emptypb.Empty) (*emptypb.Empty, error) {
+	return empty, nil
+}
+
 func (l *loggerServerHandler) SaveServiceLog(ctx context.Context, request *logger.SaveServiceLogReq) (empty *emptypb.Empty, err error) {
 	//apiKey := request.GetAPIKey()  TODO: validate api key
 	loggerService := serviceLogger.GetServiceLoggerInstance()
@@ -36,7 +39,6 @@ func (l *loggerServerHandler) SaveServiceLog(ctx context.Context, request *logge
 	if err != nil {
 		return
 	}
-	fmt.Println(request.GetTimestamp())
 	serviceLog := entities.ServiceLog{
 		Timestamp: time.Now(),
 		Severity:  severityValue,

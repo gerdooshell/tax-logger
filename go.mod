@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.2
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.1.0
-	github.com/gerdooshell/tax-communication/src/logger v0.0.0-20240225061414-a17e5cb6a473
+	github.com/gerdooshell/tax-communication/src/logger v0.0.0-20240227062957-38916e185513
 	google.golang.org/grpc v1.62.0
 	google.golang.org/protobuf v1.32.0
 	gorm.io/driver/postgres v1.5.6

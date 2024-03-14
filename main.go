@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"runtime"
 	"time"
 
@@ -15,7 +14,6 @@ func main() {
 	if err := environment.SetEnvironment(env); err != nil {
 		panic(err)
 	}
-	go report()
 	go runGC()
 	err := server.ServeGRPC()
 	panic(err)
@@ -29,17 +27,6 @@ func readEnvironment() environment.Environment {
 		env = environment.Prod
 	}
 	return env
-}
-
-func report() {
-	t := time.NewTicker(time.Second * 5)
-	var memStats runtime.MemStats
-
-	for {
-		runtime.ReadMemStats(&memStats)
-		fmt.Println(runtime.NumGoroutine(), memStats.Alloc/1024, memStats.HeapAlloc/1024, memStats.NumGC)
-		<-t.C
-	}
 }
 
 func runGC() {

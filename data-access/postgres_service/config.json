@@ -2,12 +2,12 @@
 	"Prod": {
 		"Engine": "postgres",
 		"HostTag": "logger",
-		"ContainsSecrets": false,
+		"ContainsSecrets": true,
 		"VaultURL": "https://tax-secrets.vault.azure.net/",
-		"Host": "localhost",
-		"User": "hesam",
+		"Host": "host",
+		"User": "user",
 		"Password": "password",
-		"Port": "5432",
+		"Port": "port",
 		"Database": "database",
 		"SSL": false
 	},
